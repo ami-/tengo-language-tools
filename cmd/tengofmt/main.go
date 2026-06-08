@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/ami-/tengo-language-tools/internal/formatter"
@@ -29,7 +30,7 @@ func main() {
 	}
 
 	if flag.NArg() == 0 {
-		src, err := os.ReadFile("/dev/stdin")
+		src, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
