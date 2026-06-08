@@ -23,6 +23,7 @@ type Server struct {
 	rootURI     string
 	initialized bool
 	shutdown    bool
+	maxLineLen  int
 }
 
 func Serve(r io.Reader, w io.Writer, version string) error {

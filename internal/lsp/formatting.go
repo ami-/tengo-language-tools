@@ -22,7 +22,11 @@ func (s *Server) handleFormatting(msg RequestMessage) {
 		return
 	}
 
-	formatted, err := formatter.Format([]byte(doc.Text))
+	maxLen := s.maxLineLen
+	if maxLen == 0 {
+		maxLen = formatter.DefaultMaxLineLen
+	}
+	formatted, err := formatter.FormatWithConfig([]byte(doc.Text), formatter.Config{MaxLineLen: maxLen})
 	if err != nil {
 		// Parse error — don't format, return empty edits
 		s.sendResponse(*msg.ID, []TextEdit{}, nil)

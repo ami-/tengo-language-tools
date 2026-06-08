@@ -40,9 +40,12 @@ const (
 // initialize
 
 type InitializeParams struct {
-	ProcessID *int   `json:"processId"`
-	RootURI   string `json:"rootUri"`
-	RootPath  string `json:"rootPath"` // legacy fallback
+	ProcessID             *int   `json:"processId"`
+	RootURI               string `json:"rootUri"`
+	RootPath              string `json:"rootPath"` // legacy fallback
+	InitializationOptions *struct {
+		MaxLineLen int `json:"maxLineLen"`
+	} `json:"initializationOptions,omitempty"`
 }
 
 type InitializeResult struct {

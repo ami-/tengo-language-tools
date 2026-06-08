@@ -79,6 +79,9 @@ func (s *Server) handleInitialize(msg RequestMessage) {
 		if s.rootURI == "" && params.RootPath != "" {
 			s.rootURI = "file://" + params.RootPath
 		}
+		if params.InitializationOptions != nil && params.InitializationOptions.MaxLineLen > 0 {
+			s.maxLineLen = params.InitializationOptions.MaxLineLen
+		}
 	}
 	s.initialized = true
 	result := InitializeResult{
