@@ -67,6 +67,13 @@ func (s *Server) dispatch(msg RequestMessage) {
 }
 
 func (s *Server) handleInitialize(msg RequestMessage) {
+	var params InitializeParams
+	if err := json.Unmarshal(msg.Params, &params); err == nil {
+		s.rootURI = params.RootURI
+		if s.rootURI == "" && params.RootPath != "" {
+			s.rootURI = "file://" + params.RootPath
+		}
+	}
 	s.initialized = true
 	result := InitializeResult{
 		Capabilities: ServerCapabilities{

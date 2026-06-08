@@ -129,7 +129,9 @@ func walkNode(node parser.Node, fn func(parser.Node) bool) {
 		walkNode(n.False, fn)
 	case *parser.SelectorExpr:
 		walkNode(n.Expr, fn)
-		walkNode(n.Sel, fn)
+		// Sel is always a StringLit in Tengo (dot access desugars to map key).
+		// Not recursing lets findNodeAt return the SelectorExpr itself when
+		// the cursor is on the selector name, enabling cross-module definition lookup.
 	case *parser.IndexExpr:
 		walkNode(n.Expr, fn)
 		walkNode(n.Index, fn)
@@ -229,6 +231,23 @@ func funcSignature(name string, fn *parser.FuncLit) string {
 		sig = name + " := " + sig
 	}
 	return sig
+}
+
+// fileHeaderComment returns consecutive // comment lines from the top of text,
+// skipping any leading blank lines. Used to surface module-level doc comments.
+func fileHeaderComment(text string) string {
+	var comments []string
+	for _, line := range strings.Split(text, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "//") {
+			comments = append(comments, strings.TrimSpace(strings.TrimPrefix(trimmed, "//")))
+		} else if trimmed == "" && len(comments) == 0 {
+			continue // skip leading blank lines before the comment block
+		} else {
+			break
+		}
+	}
+	return strings.Join(comments, "\n")
 }
 
 func isNilNode(n parser.Node) bool {

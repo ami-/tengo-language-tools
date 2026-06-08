@@ -40,7 +40,9 @@ const (
 // initialize
 
 type InitializeParams struct {
-	ProcessID *int `json:"processId"`
+	ProcessID *int   `json:"processId"`
+	RootURI   string `json:"rootUri"`
+	RootPath  string `json:"rootPath"` // legacy fallback
 }
 
 type InitializeResult struct {

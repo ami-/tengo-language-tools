@@ -20,6 +20,7 @@ type Server struct {
 	writer      io.Writer
 	writeMu     sync.Mutex
 	version     string
+	rootURI     string
 	initialized bool
 	shutdown    bool
 }
