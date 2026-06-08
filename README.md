@@ -11,7 +11,8 @@ Formats Tengo source files.
 ```
 Usage: tengofmt [flags] [file...]
 
-  -w    write result to source file instead of stdout
+  -l int   max line length for inlining map literals (0 to always expand, default 100)
+  -w       write result to source file instead of stdout
 ```
 
 Reads from stdin if no files are given.
@@ -54,6 +55,9 @@ Requires Neovim 0.11+ and [lazy.nvim](https://github.com/folke/lazy.nvim).
   config = function()
     require('tengo-language-tools').setup({
       -- enable_lsp = true,  -- uncomment when tengols is implemented
+      formatter = {
+        max_line_len = 100,  -- inline map literals up to this width (0 to always expand)
+      },
     })
   end,
 }
@@ -61,17 +65,12 @@ Requires Neovim 0.11+ and [lazy.nvim](https://github.com/folke/lazy.nvim).
 
 The `build = 'make'` step compiles `tengofmt` and `tengols` into the plugin directory.
 
-### Formatter (tengofmt) with conform.nvim
+`setup()` automatically registers `tengofmt` with [conform.nvim](https://github.com/stevearc/conform.nvim) if it is loaded. Add `tengo` to `formatters_by_ft` to activate it:
 
 ```lua
 -- In your conform.nvim opts:
 formatters_by_ft = {
   tengo = { 'tengofmt' },
-},
-formatters = {
-  tengofmt = {
-    command = vim.fn.stdpath('data') .. '/lazy/tengo-language-tools/tengofmt',
-  },
 },
 ```
 
