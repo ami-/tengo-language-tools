@@ -49,10 +49,28 @@ type InitializeResult struct {
 }
 
 type ServerCapabilities struct {
-	TextDocumentSync       int  `json:"textDocumentSync"` // 1 = Full
-	HoverProvider          bool `json:"hoverProvider"`
-	ReferencesProvider     bool `json:"referencesProvider"`
-	DocumentSymbolProvider bool `json:"documentSymbolProvider"`
+	TextDocumentSync         int  `json:"textDocumentSync"` // 1 = Full
+	HoverProvider            bool `json:"hoverProvider"`
+	ReferencesProvider       bool `json:"referencesProvider"`
+	DocumentSymbolProvider   bool `json:"documentSymbolProvider"`
+	DocumentFormattingProvider bool `json:"documentFormattingProvider"`
+}
+
+// formatting
+
+type DocumentFormattingParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Options      FormattingOptions      `json:"options"`
+}
+
+type FormattingOptions struct {
+	TabSize      int  `json:"tabSize"`
+	InsertSpaces bool `json:"insertSpaces"`
+}
+
+type TextEdit struct {
+	Range   Range  `json:"range"`
+	NewText string `json:"newText"`
 }
 
 type ServerInfo struct {

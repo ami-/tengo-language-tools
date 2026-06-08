@@ -52,6 +52,8 @@ func (s *Server) dispatch(msg RequestMessage) {
 		s.handleReferences(msg)
 	case "textDocument/documentSymbol":
 		s.handleDocumentSymbol(msg)
+	case "textDocument/formatting":
+		s.handleFormatting(msg)
 	default:
 		if isRequest {
 			s.sendResponse(*msg.ID, nil, &ResponseError{
@@ -66,10 +68,11 @@ func (s *Server) handleInitialize(msg RequestMessage) {
 	s.initialized = true
 	result := InitializeResult{
 		Capabilities: ServerCapabilities{
-				TextDocumentSync:       1,
-				HoverProvider:          true,
-				ReferencesProvider:     true,
-				DocumentSymbolProvider: true,
+				TextDocumentSync:           1,
+				HoverProvider:              true,
+				ReferencesProvider:         true,
+				DocumentSymbolProvider:     true,
+				DocumentFormattingProvider: true,
 			},
 		ServerInfo:   ServerInfo{Name: "tengols", Version: s.version},
 	}
