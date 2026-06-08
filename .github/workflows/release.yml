@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container: golang:alpine
+    permissions:
+      contents: write
+
+    steps:
+      - name: Install tools
+        run: apk add --no-cache zip git github-cli
+
+      - uses: actions/checkout@v4
+
+      - name: Build and package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          TENGO_VERSION=$(go list -m -f '{{.Version}}' github.com/d5/tengo/v2)
+          LDFLAGS="-X main.version=${VERSION} -X main.tengoVersion=${TENGO_VERSION}"
+
+          build() {
+            local GOOS=$1 GOARCH=$2
+            local EXT=""
+            [ "$GOOS" = "windows" ] && EXT=".exe"
+            GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "$LDFLAGS" -o "tengofmt${EXT}" ./cmd/tengofmt
+            GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "$LDFLAGS" -o "tengols${EXT}"  ./cmd/tengols
+            local NAME="tengo-language-tools_${GOOS}_${GOARCH}"
+            if [ "$GOOS" = "windows" ]; then
+              zip "${NAME}.zip" tengofmt.exe tengols.exe
+            else
+              tar czf "${NAME}.tar.gz" tengofmt tengols
+            fi
+            rm -f tengofmt tengofmt.exe tengols tengols.exe
+          }
+
+          build linux  amd64
+          build linux  arm64
+          build darwin amd64
+          build darwin arm64
+          build windows amd64
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            tengo-language-tools_*.tar.gz \
+            tengo-language-tools_*.zip
