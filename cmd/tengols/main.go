@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/ami-/tengo-language-tools/internal/lsp"
 )
 
 var (
@@ -20,7 +22,8 @@ func main() {
 		return
 	}
 
-	// placeholder — LSP server to be implemented
-	fmt.Fprintln(os.Stderr, "tengols: not yet implemented")
-	os.Exit(1)
+	if err := lsp.Serve(os.Stdin, os.Stdout, version); err != nil {
+		fmt.Fprintln(os.Stderr, "tengols:", err)
+		os.Exit(1)
+	}
 }
