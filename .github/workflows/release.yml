@@ -28,8 +28,8 @@ jobs:
             local GOOS=$1 GOARCH=$2
             local EXT=""
             [ "$GOOS" = "windows" ] && EXT=".exe"
-            GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "$LDFLAGS" -o "tengofmt${EXT}" ./cmd/tengofmt
-            GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "$LDFLAGS" -o "tengols${EXT}"  ./cmd/tengols
+            GOOS=$GOOS GOARCH=$GOARCH go build -buildvcs=false -ldflags "$LDFLAGS" -o "tengofmt${EXT}" ./cmd/tengofmt
+            GOOS=$GOOS GOARCH=$GOARCH go build -buildvcs=false -ldflags "$LDFLAGS" -o "tengols${EXT}"  ./cmd/tengols
             local NAME="tengo-language-tools_${GOOS}_${GOARCH}"
             if [ "$GOOS" = "windows" ]; then
               zip "${NAME}.zip" tengofmt.exe tengols.exe
