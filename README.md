@@ -1,5 +1,7 @@
 # tengo-language-tools
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Developer tooling for the [Tengo](https://github.com/d5/tengo) scripting language.
 
 ## Tools
@@ -30,9 +32,20 @@ tengofmt -w file.tengo
 cat file.tengo | tengofmt
 ```
 
-### tengols _(planned)_
+### tengols
 
-Language server (LSP) for Tengo. Will provide diagnostics, hover, go-to-definition, and formatting via any LSP-compatible editor.
+Language server (LSP) for Tengo. Works with any LSP-compatible editor.
+
+| Capability | Details |
+|---|---|
+| **Diagnostics** | Syntax errors reported on save/change |
+| **Hover** | Signature and doc comment for local functions, imported module members, and all Tengo stdlib functions (`fmt`, `math`, `os`, `text`, `times`, `rand`, `json`, `hex`, `base64`, `enum`) |
+| **Go to definition** | Jumps to the definition of variables, functions, function parameters, for-loop variables, and module members; falls back to the deepest resolvable parent in a selector chain |
+| **Find references** | All usages of a symbol in the current file |
+| **Completion** | Dot-triggered member completion for local modules and stdlib; bare-identifier completion for locals, imports, and keywords |
+| **Rename** | Renames a symbol across the current file; for exported symbols, propagates to all workspace files that import the module |
+| **Document symbols** | Outline of top-level functions and variables |
+| **Formatting** | Full-document format via `tengofmt` |
 
 ## Building
 
