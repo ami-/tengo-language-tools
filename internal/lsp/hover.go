@@ -90,6 +90,9 @@ func identFromNode(node parser.Node) *parser.Ident {
 
 // hoverInScope builds hover markdown for name within a resolved scope.
 func hoverInScope(scope *SearchScope, name string) string {
+	if scope.StdlibMod != "" {
+		return hoverStdlib(scope.StdlibMod, name)
+	}
 	if scope.Body != nil {
 		return hoverMapKey(scope.Body, name)
 	}

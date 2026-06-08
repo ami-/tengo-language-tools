@@ -13,14 +13,15 @@ import (
 
 // SearchScope is what a parent expression resolves to.
 // File/SrcFile/URI/Text describe where to search.
-// Body, if non-nil, restricts the search to a function's return values
-// (used when the parent is a call whose return value is a map).
+// Body, if non-nil, restricts the search to a function's return values.
+// StdlibMod is non-empty when the scope is a Tengo stdlib module.
 type SearchScope struct {
-	File    *parser.File
-	SrcFile *parser.SourceFile
-	URI     string
-	Text    string            // raw source text
-	Body    *parser.BlockStmt // non-nil: search return maps inside this body
+	File      *parser.File
+	SrcFile   *parser.SourceFile
+	URI       string
+	Text      string
+	Body      *parser.BlockStmt
+	StdlibMod string
 }
 
 // resolveParent traces expr backwards through top-level assignments to find
@@ -54,6 +55,9 @@ func resolveParent(file *parser.File, srcFile *parser.SourceFile, text, uri, roo
 				// x := import("mod")
 				path := resolveModulePath(r.ModuleName, uri, rootURI)
 				if path == "" {
+					if tengoStdlib[r.ModuleName] {
+						return &SearchScope{StdlibMod: r.ModuleName}
+					}
 					return nil
 				}
 				data, err := os.ReadFile(path)
@@ -119,6 +123,9 @@ func resolveParent(file *parser.File, srcFile *parser.SourceFile, text, uri, roo
 
 // findInScope locates the definition of name within the resolved scope.
 func findInScope(scope *SearchScope, name string) *Location {
+	if scope.StdlibMod != "" {
+		return nil // stdlib has no .tengo source file to jump to
+	}
 	if scope.Body != nil {
 		return findKeyInFuncReturns(scope.Body, scope.SrcFile, scope.URI, name)
 	}
