@@ -185,7 +185,8 @@ func (p *printer) printStmt(s parser.Stmt) {
 	case *parser.ForStmt:
 		p.printIndent()
 		p.write("for ")
-		if s.Init != nil || s.Cond != nil || s.Post != nil {
+		if s.Init != nil || s.Post != nil {
+			// C-style: for init; cond; post {}
 			if s.Init != nil {
 				p.printStmtInline(s.Init)
 			}
@@ -199,6 +200,7 @@ func (p *printer) printStmt(s parser.Stmt) {
 			}
 			p.write(" ")
 		} else if s.Cond != nil {
+			// While-style: for cond {}
 			p.printExpr(s.Cond)
 			p.write(" ")
 		}
@@ -443,6 +445,22 @@ func (p *printer) printExpr(e parser.Expr) {
 		}
 
 	case *parser.BinaryExpr:
+		if p.maxLineLen > 0 && !p.forceInline &&
+			(e.Token == token.LOr || e.Token == token.LAnd) {
+			inline := p.renderExprInline(e)
+			if p.currentLineLen()+len(inline) > p.maxLineLen {
+				terms := flattenBinOp(e, e.Token)
+				for i, term := range terms {
+					p.printExpr(term)
+					if i < len(terms)-1 {
+						p.write(" " + e.Token.String() + "\n")
+						p.printIndent()
+						p.write("\t")
+					}
+				}
+				return
+			}
+		}
 		p.printExpr(e.LHS)
 		p.write(" " + e.Token.String() + " ")
 		p.printExpr(e.RHS)
@@ -522,6 +540,34 @@ func (p *printer) hasCommentsInRange(fromLine, toLine int) bool {
 		}
 	}
 	return false
+}
+
+// currentLineLen returns the number of bytes written since the last newline.
+func (p *printer) currentLineLen() int {
+	buf := p.out.Bytes()
+	i := bytes.LastIndexByte(buf, '\n')
+	if i < 0 {
+		return len(buf)
+	}
+	return len(buf) - i - 1
+}
+
+// renderExprInline renders an expression to a flat string for length measurement.
+func (p *printer) renderExprInline(e parser.Expr) string {
+	var buf bytes.Buffer
+	sub := &printer{out: &buf, srcFile: p.srcFile, forceInline: true}
+	sub.printExpr(e)
+	return buf.String()
+}
+
+// flattenBinOp collects the leaf operands of a left-associative binary chain
+// for a single operator. flattenBinOp((a||b)||c, ||) → [a, b, c].
+func flattenBinOp(e parser.Expr, op token.Token) []parser.Expr {
+	bin, ok := e.(*parser.BinaryExpr)
+	if !ok || bin.Token != op {
+		return []parser.Expr{e}
+	}
+	return append(flattenBinOp(bin.LHS, op), bin.RHS)
 }
 
 // renderMapInline renders e as a flat one-line string, e.g. {k1: v1, k2: v2}.
