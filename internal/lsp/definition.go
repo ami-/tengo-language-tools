@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/d5/tengo/v2/parser"
+	"github.com/d5/tengo/v2/token"
 )
 
 // SearchScope is what a parent expression resolves to.
@@ -228,6 +229,9 @@ func (s *Server) handleDefinition(msg RequestMessage) {
 	// SelectorExpr itself when the cursor is past the object ident.
 	if sel, ok := node.(*parser.SelectorExpr); ok {
 		loc := findSelectorDefinition(file, srcFile, doc.Text, params.TextDocument.URI, s.rootURI, sel)
+		if loc == nil {
+			loc = resolveChainFallback(file, srcFile, doc.Text, params.TextDocument.URI, s.rootURI, sel.Expr, targetPos)
+		}
 		s.sendResponse(*msg.ID, loc, nil)
 		return
 	}
@@ -238,8 +242,24 @@ func (s *Server) handleDefinition(msg RequestMessage) {
 		return
 	}
 
-	loc := findDefinition(file, srcFile, params.TextDocument.URI, s.rootURI, ident.Name)
+	loc := findDefinition(file, srcFile, params.TextDocument.URI, s.rootURI, ident.Name, targetPos)
 	s.sendResponse(*msg.ID, loc, nil)
+}
+
+// resolveChainFallback finds the deepest resolvable definition in a chain.
+// For a SelectorExpr it tries findSelectorDefinition first; on failure it
+// peels one level and recurses. For a plain Ident it falls back to findDefinition.
+func resolveChainFallback(file *parser.File, srcFile *parser.SourceFile, text, uri, rootURI string, expr parser.Expr, targetPos parser.Pos) *Location {
+	switch e := expr.(type) {
+	case *parser.Ident:
+		return findDefinition(file, srcFile, uri, rootURI, e.Name, targetPos)
+	case *parser.SelectorExpr:
+		if loc := findSelectorDefinition(file, srcFile, text, uri, rootURI, e); loc != nil {
+			return loc
+		}
+		return resolveChainFallback(file, srcFile, text, uri, rootURI, e.Expr, targetPos)
+	}
+	return nil
 }
 
 // findSelectorDefinition resolves obj.sel by tracing obj through assignments
@@ -256,9 +276,16 @@ func findSelectorDefinition(file *parser.File, srcFile *parser.SourceFile, text,
 	return findInScope(scope, selLit.Value)
 }
 
-// findDefinition scans top-level assignments for the first LHS ident matching name.
-// If the RHS is an import expression the module file is resolved instead.
-func findDefinition(file *parser.File, srcFile *parser.SourceFile, uri, rootURI, name string) *Location {
+// findDefinition locates the definition of name visible from targetPos.
+//
+// Strategy:
+//  1. Top-level import bindings jump to the module file.
+//  2. Walk the entire AST for `:=` assignments; return the one closest to
+//     targetPos without exceeding it (i.e. the innermost/nearest definition
+//     in scope). This handles variables defined inside function bodies,
+//     for-loop bodies, if blocks, etc.
+func findDefinition(file *parser.File, srcFile *parser.SourceFile, uri, rootURI, name string, targetPos parser.Pos) *Location {
+	// Pass 1: top-level imports take priority.
 	for _, stmt := range file.Stmts {
 		assign, ok := stmt.(*parser.AssignStmt)
 		if !ok {
@@ -274,11 +301,94 @@ func findDefinition(file *parser.File, srcFile *parser.SourceFile, uri, rootURI,
 					return resolveModuleLocation(imp.ModuleName, uri, rootURI)
 				}
 			}
-			r := nodeRange(srcFile, id)
-			return &Location{URI: uri, Range: r}
 		}
 	}
-	return nil
+
+	// Pass 2: find the closest binding before targetPos.
+	// Considers `:=` statements, function parameters, and for-in loop variables.
+	// The binding with the highest position that is still ≤ targetPos wins,
+	// so inner scopes naturally shadow outer ones.
+	var bestLoc *Location
+	var bestPos parser.Pos
+
+	candidate := func(pos parser.Pos, loc *Location) {
+		if pos <= targetPos && (bestLoc == nil || pos > bestPos) {
+			bestLoc = loc
+			bestPos = pos
+		}
+	}
+
+	walkNode(file, func(node parser.Node) bool {
+		switch n := node.(type) {
+		case *parser.AssignStmt:
+			if n.Token != token.Define {
+				return true
+			}
+			for _, lhs := range n.LHS {
+				id, ok := lhs.(*parser.Ident)
+				if !ok || id.Name != name {
+					continue
+				}
+				r := nodeRange(srcFile, id)
+				candidate(n.Pos(), &Location{URI: uri, Range: r})
+			}
+		case *parser.FuncLit:
+			// Parameters are in scope only inside the function body.
+			if n.Body == nil || n.Body.LBrace > targetPos || targetPos > n.Body.RBrace {
+				return true
+			}
+			if n.Type != nil && n.Type.Params != nil {
+				for _, param := range n.Type.Params.List {
+					if param.Name != name {
+						continue
+					}
+					r := nodeRange(srcFile, param)
+					candidate(n.Pos(), &Location{URI: uri, Range: r})
+				}
+			}
+		case *parser.ForInStmt:
+			// Key/Value variables are in scope only inside the loop body.
+			if n.Body == nil || n.Body.LBrace > targetPos || targetPos > n.Body.RBrace {
+				return true
+			}
+			for _, iter := range []*parser.Ident{n.Key, n.Value} {
+				if iter == nil || iter.Name != name {
+					continue
+				}
+				r := nodeRange(srcFile, iter)
+				candidate(n.Pos(), &Location{URI: uri, Range: r})
+			}
+		}
+		return true
+	})
+	if bestLoc != nil {
+		return bestLoc
+	}
+
+	// Fallback: cursor is before the first definition — return the earliest one.
+	walkNode(file, func(node parser.Node) bool {
+		if bestLoc != nil {
+			return false
+		}
+		assign, ok := node.(*parser.AssignStmt)
+		if !ok {
+			return true
+		}
+		if assign.Token != token.Define {
+			return true
+		}
+		for _, lhs := range assign.LHS {
+			id, ok := lhs.(*parser.Ident)
+			if !ok || id.Name != name {
+				continue
+			}
+			r := nodeRange(srcFile, id)
+			bestLoc = &Location{URI: uri, Range: r}
+			return false
+		}
+		return true
+	})
+	return bestLoc
 }
 
 // findDefinitionInFile finds name in a parsed file via two strategies:
