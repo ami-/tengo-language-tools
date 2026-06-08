@@ -51,11 +51,13 @@ func Serve(r io.Reader, w io.Writer, version string) error {
 }
 
 func (s *Server) sendResponse(id json.RawMessage, result any, rpcErr *ResponseError) {
-	resp := ResponseMessage{
-		JSONRPC: "2.0",
-		ID:      id,
-		Result:  result,
-		Error:   rpcErr,
+	resp := ResponseMessage{JSONRPC: "2.0", ID: id, Error: rpcErr}
+	if rpcErr == nil {
+		if result == nil {
+			resp.Result = json.RawMessage("null")
+		} else {
+			resp.Result, _ = json.Marshal(result)
+		}
 	}
 	body, _ := json.Marshal(resp)
 	writeMessage(s.writer, &s.writeMu, body) //nolint:errcheck

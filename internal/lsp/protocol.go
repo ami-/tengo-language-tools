@@ -14,7 +14,7 @@ type RequestMessage struct {
 type ResponseMessage struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      json.RawMessage `json:"id"`
-	Result  interface{}     `json:"result,omitempty"`
+	Result  json.RawMessage `json:"result,omitempty"`
 	Error   *ResponseError  `json:"error,omitempty"`
 }
 
@@ -49,7 +49,10 @@ type InitializeResult struct {
 }
 
 type ServerCapabilities struct {
-	TextDocumentSync int `json:"textDocumentSync"` // 1 = Full
+	TextDocumentSync       int  `json:"textDocumentSync"` // 1 = Full
+	HoverProvider          bool `json:"hoverProvider"`
+	ReferencesProvider     bool `json:"referencesProvider"`
+	DocumentSymbolProvider bool `json:"documentSymbolProvider"`
 }
 
 type ServerInfo struct {
@@ -90,6 +93,61 @@ type DidCloseTextDocumentParams struct {
 type TextDocumentIdentifier struct {
 	URI string `json:"uri"`
 }
+
+// hover
+
+type HoverParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Position     Position               `json:"position"`
+}
+
+type HoverResult struct {
+	Contents MarkupContent `json:"contents"`
+	Range    *Range        `json:"range,omitempty"`
+}
+
+type MarkupContent struct {
+	Kind  string `json:"kind"` // "markdown" or "plaintext"
+	Value string `json:"value"`
+}
+
+// references
+
+type ReferenceParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Position     Position               `json:"position"`
+	Context      ReferenceContext       `json:"context"`
+}
+
+type ReferenceContext struct {
+	IncludeDeclaration bool `json:"includeDeclaration"`
+}
+
+type Location struct {
+	URI   string `json:"uri"`
+	Range Range  `json:"range"`
+}
+
+// document symbols
+
+type DocumentSymbolParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+}
+
+type DocumentSymbol struct {
+	Name           string           `json:"name"`
+	Kind           SymbolKind       `json:"kind"`
+	Range          Range            `json:"range"`
+	SelectionRange Range            `json:"selectionRange"`
+	Children       []DocumentSymbol `json:"children,omitempty"`
+}
+
+type SymbolKind int
+
+const (
+	SymbolKindFunction SymbolKind = 12
+	SymbolKindVariable SymbolKind = 13
+)
 
 // diagnostics
 
