@@ -15,6 +15,7 @@ var (
 
 func main() {
 	ver := flag.Bool("version", false, "print version and exit")
+	flag.Bool("stdio", false, "use stdio transport (default, accepted for LSP client compatibility)")
 	flag.Parse()
 
 	if *ver {
