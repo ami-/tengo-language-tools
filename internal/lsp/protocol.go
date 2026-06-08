@@ -54,6 +54,7 @@ type ServerCapabilities struct {
 	ReferencesProvider       bool `json:"referencesProvider"`
 	DocumentSymbolProvider   bool `json:"documentSymbolProvider"`
 	DocumentFormattingProvider bool `json:"documentFormattingProvider"`
+	DefinitionProvider         bool `json:"definitionProvider"`
 }
 
 // formatting

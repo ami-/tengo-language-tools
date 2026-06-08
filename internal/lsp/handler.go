@@ -54,6 +54,8 @@ func (s *Server) dispatch(msg RequestMessage) {
 		s.handleDocumentSymbol(msg)
 	case "textDocument/formatting":
 		s.handleFormatting(msg)
+	case "textDocument/definition":
+		s.handleDefinition(msg)
 	default:
 		if isRequest {
 			s.sendResponse(*msg.ID, nil, &ResponseError{
@@ -73,6 +75,7 @@ func (s *Server) handleInitialize(msg RequestMessage) {
 				ReferencesProvider:         true,
 				DocumentSymbolProvider:     true,
 				DocumentFormattingProvider: true,
+				DefinitionProvider:         true,
 			},
 		ServerInfo:   ServerInfo{Name: "tengols", Version: s.version},
 	}
