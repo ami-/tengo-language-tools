@@ -56,6 +56,12 @@ func (s *Server) dispatch(msg RequestMessage) {
 		s.handleFormatting(msg)
 	case "textDocument/definition":
 		s.handleDefinition(msg)
+	case "textDocument/completion":
+		s.handleCompletion(msg)
+	case "textDocument/rename":
+		s.handleRename(msg)
+	case "textDocument/prepareRename":
+		s.handlePrepareRename(msg)
 	default:
 		if isRequest {
 			s.sendResponse(*msg.ID, nil, &ResponseError{
@@ -83,6 +89,8 @@ func (s *Server) handleInitialize(msg RequestMessage) {
 				DocumentSymbolProvider:     true,
 				DocumentFormattingProvider: true,
 				DefinitionProvider:         true,
+				CompletionProvider:         &CompletionOptions{TriggerCharacters: []string{"."}},
+				RenameProvider:             true,
 			},
 		ServerInfo:   ServerInfo{Name: "tengols", Version: s.version},
 	}

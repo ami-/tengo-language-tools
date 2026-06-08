@@ -51,12 +51,18 @@ type InitializeResult struct {
 }
 
 type ServerCapabilities struct {
-	TextDocumentSync         int  `json:"textDocumentSync"` // 1 = Full
-	HoverProvider            bool `json:"hoverProvider"`
-	ReferencesProvider       bool `json:"referencesProvider"`
-	DocumentSymbolProvider   bool `json:"documentSymbolProvider"`
-	DocumentFormattingProvider bool `json:"documentFormattingProvider"`
-	DefinitionProvider         bool `json:"definitionProvider"`
+	TextDocumentSync           int                `json:"textDocumentSync"` // 1 = Full
+	HoverProvider              bool               `json:"hoverProvider"`
+	ReferencesProvider         bool               `json:"referencesProvider"`
+	DocumentSymbolProvider     bool               `json:"documentSymbolProvider"`
+	DocumentFormattingProvider bool               `json:"documentFormattingProvider"`
+	DefinitionProvider         bool               `json:"definitionProvider"`
+	CompletionProvider         *CompletionOptions `json:"completionProvider,omitempty"`
+	RenameProvider             bool               `json:"renameProvider"`
+}
+
+type CompletionOptions struct {
+	TriggerCharacters []string `json:"triggerCharacters"`
 }
 
 // formatting
@@ -169,6 +175,37 @@ const (
 	SymbolKindFunction SymbolKind = 12
 	SymbolKindVariable SymbolKind = 13
 )
+
+// completion
+
+type CompletionParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Position     Position               `json:"position"`
+}
+
+type CompletionItem struct {
+	Label         string `json:"label"`
+	Kind          int    `json:"kind"` // 3=Function 6=Variable 9=Module 14=Keyword
+	Detail        string `json:"detail,omitempty"`
+	Documentation string `json:"documentation,omitempty"`
+}
+
+// rename
+
+type RenameParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Position     Position               `json:"position"`
+	NewName      string                 `json:"newName"`
+}
+
+type PrepareRenameParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Position     Position               `json:"position"`
+}
+
+type WorkspaceEdit struct {
+	Changes map[string][]TextEdit `json:"changes"`
+}
 
 // diagnostics
 
