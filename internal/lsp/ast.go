@@ -183,8 +183,12 @@ func collectIdents(file *parser.File) []*parser.Ident {
 
 // topLevelSymbols extracts document symbols from top-level assignment statements.
 func topLevelSymbols(file *parser.File, srcFile *parser.SourceFile) []DocumentSymbol {
+	return stmtsToSymbols(file.Stmts, srcFile)
+}
+
+func stmtsToSymbols(stmts []parser.Stmt, srcFile *parser.SourceFile) []DocumentSymbol {
 	var syms []DocumentSymbol
-	for _, stmt := range file.Stmts {
+	for _, stmt := range stmts {
 		assign, ok := stmt.(*parser.AssignStmt)
 		if !ok {
 			continue
@@ -195,9 +199,11 @@ func topLevelSymbols(file *parser.File, srcFile *parser.SourceFile) []DocumentSy
 				continue
 			}
 			kind := SymbolKindVariable
+			var children []DocumentSymbol
 			if i < len(assign.RHS) {
-				if _, isFunc := assign.RHS[i].(*parser.FuncLit); isFunc {
+				if fn, ok := assign.RHS[i].(*parser.FuncLit); ok {
 					kind = SymbolKindFunction
+					children = stmtsToSymbols(fn.Body.Stmts, srcFile)
 				}
 			}
 			syms = append(syms, DocumentSymbol{
@@ -205,6 +211,7 @@ func topLevelSymbols(file *parser.File, srcFile *parser.SourceFile) []DocumentSy
 				Kind:           kind,
 				Range:          nodeRange(srcFile, assign),
 				SelectionRange: nodeRange(srcFile, ident),
+				Children:       children,
 			})
 		}
 	}
