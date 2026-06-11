@@ -400,3 +400,24 @@ func TestFormat_Idempotent(t *testing.T) {
 		})
 	}
 }
+
+func TestFormat_VariadicFunc(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "variadic only param preserved",
+			input: "f := func(...args) {\n}\n",
+			want:  "f := func(...args) {\n}\n",
+		},
+		{
+			name:  "variadic last param preserved",
+			input: "f := func(fn, ...args) {\n\tfn(ctx, args)\n}\n",
+			want:  "f := func(fn, ...args) {\n\tfn(ctx, args)\n}\n",
+		},
+		{
+			name:  "idempotent on variadic",
+			input: "f := func(a, b, ...rest) {\n}\n",
+			want:  "f := func(a, b, ...rest) {\n}\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}

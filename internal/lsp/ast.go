@@ -223,8 +223,12 @@ func stmtsToSymbols(stmts []parser.Stmt, srcFile *parser.SourceFile) []DocumentS
 // funcSignature renders a FuncLit's parameter names as "func(a, b, c)".
 func funcSignature(name string, fn *parser.FuncLit) string {
 	var params []string
-	for _, p := range fn.Type.Params.List {
-		params = append(params, p.Name)
+	for i, p := range fn.Type.Params.List {
+		pname := p.Name
+		if fn.Type.Params.VarArgs && i == len(fn.Type.Params.List)-1 {
+			pname = "..." + pname
+		}
+		params = append(params, pname)
 	}
 	sig := "func(" + strings.Join(params, ", ") + ")"
 	if name != "" {

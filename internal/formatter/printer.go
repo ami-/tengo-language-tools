@@ -404,6 +404,9 @@ func (p *printer) printExpr(e parser.Expr) {
 				if i > 0 {
 					p.write(", ")
 				}
+				if e.Type.Params.VarArgs && i == len(e.Type.Params.List)-1 {
+					p.write("...")
+				}
 				p.write(param.Name)
 			}
 		}
