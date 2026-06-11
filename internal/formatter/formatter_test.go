@@ -52,6 +52,19 @@ func TestFormat_Comments(t *testing.T) {
 			want:  "/* block */\nx := 1\n",
 		},
 		{
+			// A multiline block comment spans multiple source lines, so the
+			// blank-line preservation logic inserts a blank line after it.
+			name:  "multiline block comment gets trailing blank line",
+			input: "/*\n * multi\n * line\n */\nx := 1\n",
+			want:  "/*\n * multi\n * line\n */\n\nx := 1\n",
+		},
+		{
+			// Mid-expression block comments are moved to end-of-line.
+			name:  "inline block comment moves to end of line",
+			input: "x := /* why */ 1\n",
+			want:  "x := 1 /* why */\n",
+		},
+		{
 			name:  "multiple leading comments",
 			input: "// line 1\n// line 2\nx := 1\n",
 			want:  "// line 1\n// line 2\nx := 1\n",

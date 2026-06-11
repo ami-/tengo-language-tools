@@ -2,7 +2,6 @@ package formatter
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 	"unicode"
 
@@ -210,7 +209,7 @@ func (p *printer) printStmt(s parser.Stmt) {
 	case *parser.ForInStmt:
 		p.printIndent()
 		p.write("for ")
-		if s.Key != nil {
+		if s.Key != nil && s.Key.NamePos != s.Value.NamePos {
 			p.printExpr(s.Key)
 			p.write(", ")
 		}
@@ -224,6 +223,9 @@ func (p *printer) printStmt(s parser.Stmt) {
 	case *parser.BranchStmt:
 		p.printIndent()
 		p.write(s.Token.String())
+		if s.Label != nil {
+			p.write(" " + s.Label.Name)
+		}
 		p.write(p.inlineCommentAt(p.srcLine(s.Pos())) + "\n")
 
 	case *parser.IncDecStmt:
@@ -302,7 +304,7 @@ func (p *printer) printExpr(e parser.Expr) {
 		p.write(`"` + escapeString(e.Value) + `"`)
 
 	case *parser.CharLit:
-		p.write(fmt.Sprintf("'%s'", string(e.Value)))
+		p.write(e.Literal)
 
 	case *parser.ArrayLit:
 		if p.forceInline || len(e.Elements) == 0 || p.srcLine(e.LBrack) == p.srcLine(e.RBrack) {

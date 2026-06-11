@@ -401,6 +401,232 @@ func TestFormat_Idempotent(t *testing.T) {
 	}
 }
 
+func TestFormat_CharLit(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "simple char preserved",
+			input: "x := 'a'\n",
+			want:  "x := 'a'\n",
+		},
+		{
+			name:  "tab escape preserved",
+			input: "x := '\\t'\n",
+			want:  "x := '\\t'\n",
+		},
+		{
+			name:  "newline escape preserved",
+			input: "x := '\\n'\n",
+			want:  "x := '\\n'\n",
+		},
+		{
+			name:  "single quote escape preserved",
+			input: "x := '\\''\n",
+			want:  "x := '\\''\n",
+		},
+		{
+			name:  "backslash escape preserved",
+			input: "x := '\\\\'\n",
+			want:  "x := '\\\\'\n",
+		},
+		{
+			name:  "unicode char preserved",
+			input: "x := '♠'\n",
+			want:  "x := '♠'\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
+func TestFormat_BranchStmt(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "bare break",
+			input: "for {\nbreak\n}\n",
+			want:  "for {\n\tbreak\n}\n",
+		},
+		{
+			name:  "bare continue",
+			input: "for {\ncontinue\n}\n",
+			want:  "for {\n\tcontinue\n}\n",
+		},
+		{
+			name:  "labeled break preserved",
+			input: "for {\nbreak myLabel\n}\n",
+			want:  "for {\n\tbreak myLabel\n}\n",
+		},
+		{
+			name:  "labeled continue preserved",
+			input: "for {\ncontinue outer\n}\n",
+			want:  "for {\n\tcontinue outer\n}\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
+func TestFormat_IfStmt(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "simple if",
+			input: "if x > 0 {\n}\n",
+			want:  "if x > 0 {\n}\n",
+		},
+		{
+			name:  "if else",
+			input: "if x > 0 {\n} else {\n}\n",
+			want:  "if x > 0 {\n} else {\n}\n",
+		},
+		{
+			name:  "else-if chain",
+			input: "if a {\n} else if b {\n} else {\n}\n",
+			want:  "if a {\n} else if b {\n} else {\n}\n",
+		},
+		{
+			name:  "if with init",
+			input: "if x := foo(); x > 0 {\n}\n",
+			want:  "if x := foo(); x > 0 {\n}\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
+func TestFormat_ForStmt(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "infinite loop",
+			input: "for {\n}\n",
+			want:  "for {\n}\n",
+		},
+		{
+			name:  "while-style",
+			input: "for x > 0 {\n}\n",
+			want:  "for x > 0 {\n}\n",
+		},
+		{
+			name:  "c-style",
+			input: "for i := 0; i < 10; i++ {\n}\n",
+			want:  "for i := 0; i < 10; i++ {\n}\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
+func TestFormat_ForInStmt(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "single var iteration",
+			input: "for v in arr {\n}\n",
+			want:  "for v in arr {\n}\n",
+		},
+		{
+			name:  "key-value iteration",
+			input: "for k, v in m {\n}\n",
+			want:  "for k, v in m {\n}\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
+func TestFormat_CondExpr(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "ternary preserved",
+			input: "x := a ? b : c\n",
+			want:  "x := a ? b : c\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
+func TestFormat_IncDecStmt(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "increment",
+			input: "x++\n",
+			want:  "x++\n",
+		},
+		{
+			name:  "decrement",
+			input: "x--\n",
+			want:  "x--\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
+func TestFormat_ExportStmt(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "export identifier",
+			input: "export x\n",
+			want:  "export x\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
+func TestFormat_SpecialExprs(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "import expr",
+			input: "m := import(\"fmt\")\n",
+			want:  "m := import(\"fmt\")\n",
+		},
+		{
+			name:  "error expr",
+			input: "e := error(\"bad\")\n",
+			want:  "e := error(\"bad\")\n",
+		},
+		{
+			name:  "immutable expr",
+			input: "x := immutable([1, 2])\n",
+			want:  "x := immutable([1, 2])\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
+func TestFormat_AssignVariants(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "compound add",
+			input: "x += 1\n",
+			want:  "x += 1\n",
+		},
+		{
+			name:  "compound sub",
+			input: "x -= 2\n",
+			want:  "x -= 2\n",
+		},
+		{
+			name:  "multi-assign",
+			input: "a, b := 1, 2\n",
+			want:  "a, b := 1, 2\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
+func TestFormat_SliceExpr(t *testing.T) {
+	cases := []struct{ name, input, want string }{
+		{
+			name:  "full slice",
+			input: "x := a[1:3]\n",
+			want:  "x := a[1:3]\n",
+		},
+		{
+			name:  "slice from start",
+			input: "x := a[:3]\n",
+			want:  "x := a[:3]\n",
+		},
+		{
+			name:  "slice to end",
+			input: "x := a[1:]\n",
+			want:  "x := a[1:]\n",
+		},
+	}
+	runCases(t, fmtDefault, cases)
+}
+
 func TestFormat_VariadicFunc(t *testing.T) {
 	cases := []struct{ name, input, want string }{
 		{
