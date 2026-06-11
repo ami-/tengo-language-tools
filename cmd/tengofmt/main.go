@@ -43,7 +43,10 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Stdout.Write(out)
+		if _, err := os.Stdout.Write(out); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 		return
 	}
 
@@ -69,6 +72,6 @@ func processFile(path string, write bool, cfg formatter.Config) error {
 	if write {
 		return os.WriteFile(path, out, 0o644)
 	}
-	os.Stdout.Write(out)
-	return nil
+	_, err = os.Stdout.Write(out)
+	return err
 }

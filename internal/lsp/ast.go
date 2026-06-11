@@ -256,5 +256,5 @@ func fileHeaderComment(text string) string {
 
 func isNilNode(n parser.Node) bool {
 	v := reflect.ValueOf(n)
-	return v.Kind() == reflect.Ptr && v.IsNil()
+	return v.Kind() == reflect.Pointer && v.IsNil()
 }
