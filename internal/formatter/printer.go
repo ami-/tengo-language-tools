@@ -56,6 +56,21 @@ func (p *printer) flushRemainingComments() {
 	}
 }
 
+// flushInlineCommentsBefore emits any pending block comments (/* */) whose source
+// position is strictly before pos, writing them inline without indentation.
+// This preserves mid-expression block comments in their original position rather
+// than relocating them to the end of the line.
+func (p *printer) flushInlineCommentsBefore(pos parser.Pos) {
+	for p.commentIdx < len(p.comments) {
+		c := p.comments[p.commentIdx]
+		if !strings.HasPrefix(c.text, "/*") || c.pos >= pos {
+			break
+		}
+		p.write(c.text + " ")
+		p.commentIdx++
+	}
+}
+
 // inlineCommentAt returns a trailing comment string (prefixed with a space) if the
 // next pending comment is on the given source line, consuming it. Returns "" otherwise.
 func (p *printer) inlineCommentAt(line int) string {
@@ -280,6 +295,7 @@ func (p *printer) printIndent() {
 }
 
 func (p *printer) printExpr(e parser.Expr) {
+	p.flushInlineCommentsBefore(e.Pos())
 	switch e := e.(type) {
 	case *parser.Ident:
 		p.write(e.Name)

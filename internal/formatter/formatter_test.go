@@ -59,10 +59,14 @@ func TestFormat_Comments(t *testing.T) {
 			want:  "/*\n * multi\n * line\n */\n\nx := 1\n",
 		},
 		{
-			// Mid-expression block comments are moved to end-of-line.
-			name:  "inline block comment moves to end of line",
+			name:  "inline block comment preserved in position",
 			input: "x := /* why */ 1\n",
-			want:  "x := 1 /* why */\n",
+			want:  "x := /* why */ 1\n",
+		},
+		{
+			name:  "trailing block comment stays at end of line",
+			input: "x := 1 /* trailing */\n",
+			want:  "x := 1 /* trailing */\n",
 		},
 		{
 			name:  "multiple leading comments",

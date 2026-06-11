@@ -18,6 +18,7 @@ type Config struct {
 
 type commentEntry struct {
 	line int
+	pos  parser.Pos
 	text string
 }
 
@@ -55,7 +56,7 @@ func collectComments(srcFile *parser.SourceFile, src []byte) []commentEntry {
 		}
 		if tok == token.Comment {
 			line := srcFile.Position(pos).Line
-			comments = append(comments, commentEntry{line: line, text: lit})
+			comments = append(comments, commentEntry{line: line, pos: pos, text: lit})
 		}
 	}
 	return comments
