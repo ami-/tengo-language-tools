@@ -78,6 +78,26 @@ func TestFormat_Comments(t *testing.T) {
 			input: "f := func() {\n\treturn 1 // done\n}\n",
 			want:  "f := func() {\n\treturn 1 // done\n}\n",
 		},
+		{
+			name:  "line comment without space gets space added",
+			input: "//foo\nx := 1\n",
+			want:  "// foo\nx := 1\n",
+		},
+		{
+			name:  "inline line comment without space gets space added",
+			input: "x := 1 //assign\n",
+			want:  "x := 1 // assign\n",
+		},
+		{
+			name:  "line comment already with space unchanged",
+			input: "// foo\nx := 1\n",
+			want:  "// foo\nx := 1\n",
+		},
+		{
+			name:  "empty line comment unchanged",
+			input: "//\nx := 1\n",
+			want:  "//\nx := 1\n",
+		},
 	}
 
 	for _, tt := range tests {

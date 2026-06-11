@@ -36,12 +36,25 @@ func (p *printer) srcLine(pos parser.Pos) int {
 	return p.srcFile.Position(pos).Line
 }
 
+// normalizeLineComment ensures a // comment has a space after //.
+// Block comments are returned unchanged.
+func normalizeLineComment(text string) string {
+	if !strings.HasPrefix(text, "//") {
+		return text
+	}
+	body := text[2:]
+	if body == "" || body[0] == ' ' || body[0] == '\t' {
+		return text
+	}
+	return "// " + body
+}
+
 // flushCommentsBefore emits all pending comments whose source line is before
 // targetLine and returns the source line of the last emitted comment (0 if none).
 func (p *printer) flushCommentsBefore(targetLine int) int {
 	lastLine := 0
 	for p.commentIdx < len(p.comments) && p.comments[p.commentIdx].line < targetLine {
-		p.writeLine(p.comments[p.commentIdx].text)
+		p.writeLine(normalizeLineComment(p.comments[p.commentIdx].text))
 		lastLine = p.comments[p.commentIdx].line
 		p.commentIdx++
 	}
@@ -51,7 +64,7 @@ func (p *printer) flushCommentsBefore(targetLine int) int {
 // flushRemainingComments emits all remaining pending comments.
 func (p *printer) flushRemainingComments() {
 	for p.commentIdx < len(p.comments) {
-		p.writeLine(p.comments[p.commentIdx].text)
+		p.writeLine(normalizeLineComment(p.comments[p.commentIdx].text))
 		p.commentIdx++
 	}
 }
@@ -75,7 +88,7 @@ func (p *printer) flushInlineCommentsBefore(pos parser.Pos) {
 // next pending comment is on the given source line, consuming it. Returns "" otherwise.
 func (p *printer) inlineCommentAt(line int) string {
 	if p.commentIdx < len(p.comments) && p.comments[p.commentIdx].line == line {
-		text := p.comments[p.commentIdx].text
+		text := normalizeLineComment(p.comments[p.commentIdx].text)
 		p.commentIdx++
 		return " " + text
 	}
